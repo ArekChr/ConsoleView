@@ -1,118 +1,129 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
+  Button,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
+  TextInput,
   View,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+type Log = {
+  time: Date;
+  level: string;
+  message: string;
+};
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const capturedLogs: Log[] = [];
+const originalConsoleLog = console.log;
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+console.log = (...args) => {
+  capturedLogs.push({time: new Date(), level: 'log', message: args.join(' ')});
+  originalConsoleLog.apply(console, args);
+};
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const ConsoleView = () => {
+  const [input, setInput] = useState('');
+  const [logs, setLogs] = useState<Log[]>([]);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  useEffect(() => {
+    setLogs(capturedLogs);
+  }, []);
+
+  const handleExecute = () => {
+    // Sanitize the input to escape special characters
+    const sanitizedInput = input.replace(
+      /[\u2018\u2019\u201C\u201D\u201E\u2026]/g,
+      match => {
+        return {
+          '\u2018': "'",
+          '\u2019': "'",
+          '\u201C': '"',
+          '\u201D': '"',
+          '\u201E': '"',
+          '\u2026': '...',
+        }[match];
+      },
+    );
+
+    try {
+      // eslint-disable-next-line no-eval
+      const result = eval.call(this, sanitizedInput);
+
+      setLogs([
+        ...logs,
+        {time: new Date(), level: 'info', message: `> ${input}`},
+        {time: new Date(), level: 'result', message: result},
+      ]);
+    } catch (e) {
+      // If there's an error, add it to the logs
+      setLogs([
+        ...logs,
+        {time: new Date(), level: 'error', message: `> ${sanitizedInput}`},
+        {time: new Date(), level: 'error', message: `Error: ${e.message}`},
+      ]);
+    }
+    setInput(''); // Clear the input
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
+    <ScrollView style={styles.root}>
+      {logs.map((log, index) => (
+        <Text
           style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+            fontFamily: 'monospace',
+          }}
+          key={index}>{`${log.time.toLocaleTimeString()} [${log.level}] - ${
+          log.message
+        }`}</Text>
+      ))}
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          onChangeText={setInput}
+          value={input}
+          placeholder="Enter command"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Button title="Execute" onPress={handleExecute} />
+      </View>
+    </ScrollView>
+  );
+};
+
+export default function App() {
+  console.log('RENDERING APP');
+
+  return (
+    <SafeAreaView>
+      <ConsoleView />
+      <Text>parseInt result: {parseInt('10')}</Text>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  root: {
+    paddingHorizontal: 12,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  container: {
+    flex: 1,
+    paddingTop: 50,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  logs: {
+    flex: 1,
   },
-  highlight: {
-    fontWeight: '700',
+  inputContainer: {
+    flexDirection: 'row',
+  },
+  input: {
+    flex: 1,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginRight: 10,
+    height: 40,
+    paddingHorizontal: 10,
   },
 });
-
-export default App;
