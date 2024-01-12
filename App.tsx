@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   Button,
   SafeAreaView,
@@ -25,14 +25,9 @@ console.log = (...args) => {
 
 const ConsoleView = () => {
   const [input, setInput] = useState('');
-  const [logs, setLogs] = useState<Log[]>([]);
-
-  useEffect(() => {
-    setLogs(capturedLogs);
-  }, []);
+  const [logs, setLogs] = useState<Log[]>(capturedLogs);
 
   const handleExecute = () => {
-    // Sanitize the input to escape special characters
     const sanitizedInput = input.replace(
       /[\u2018\u2019\u201C\u201D\u201E\u2026]/g,
       match => {
@@ -57,23 +52,20 @@ const ConsoleView = () => {
         {time: new Date(), level: 'result', message: result},
       ]);
     } catch (e) {
-      // If there's an error, add it to the logs
       setLogs([
         ...logs,
         {time: new Date(), level: 'error', message: `> ${sanitizedInput}`},
         {time: new Date(), level: 'error', message: `Error: ${e.message}`},
       ]);
     }
-    setInput(''); // Clear the input
+    setInput('');
   };
 
   return (
-    <ScrollView style={styles.root}>
+    <ScrollView>
       {logs.map((log, index) => (
         <Text
-          style={{
-            fontFamily: 'monospace',
-          }}
+          style={{fontFamily: 'monospace'}}
           key={index}>{`${log.time.toLocaleTimeString()} [${log.level}] - ${
           log.message
         }`}</Text>
@@ -98,8 +90,9 @@ export default function App() {
 
   return (
     <SafeAreaView>
-      <ConsoleView />
-      <Text>parseInt result: {parseInt('10')}</Text>
+      <View style={styles.root}>
+        <ConsoleView />
+      </View>
     </SafeAreaView>
   );
 }
