@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import Sandbox from '@nyariv/sandboxjs';
 import {
   Button,
   SafeAreaView,
@@ -44,7 +45,11 @@ const ConsoleView = () => {
 
     try {
       // eslint-disable-next-line no-eval
-      const result = eval.call(this, sanitizedInput);
+      // const result = eval.call(this, sanitizedInput);
+
+      const sandbox = new Sandbox();
+      const exec = sandbox.compile(sanitizedInput);
+      const result = exec({}).run();
 
       setLogs([
         ...logs,
